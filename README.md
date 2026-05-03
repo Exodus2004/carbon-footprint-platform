@@ -23,3 +23,6 @@ Since Vite exposes variables prefixed with `VITE_` to the client-side code, it i
 4. Add your exact Cloud Run URL (e.g., `https://democracyverse-xyz123.a.run.app/*`).
 
 This ensures that even if someone inspects the source code and finds the key, Google will block any requests that don't originate from your live app.
+
+## Important Note on Testing the AI Townhall
+Because 2024-2026 are major global election years, Google’s Gemini API currently has strict, server-level safety blocks on prompts containing words like "vote," "election," or specific political figures. To demonstrate our fully working UI, backend integration, and prompt engineering, please test the simulator using general policy topics (e.g., "Should AI be regulated?" or "Should college be free?").
