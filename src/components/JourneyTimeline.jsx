@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const timelineData = [
@@ -19,7 +19,7 @@ const timelineData = [
   }
 ];
 
-const JourneyTimeline = () => {
+const JourneyTimeline = memo(() => {
   const { language } = useLanguage();
 
   return (
@@ -28,9 +28,8 @@ const JourneyTimeline = () => {
         {language === 'en' ? 'The Voter\'s Journey' : 'ఓటరు ప్రయాణం'}
       </h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', position: 'relative', paddingLeft: '24px', borderLeft: '2px solid var(--border-glass)' }}>
-        {timelineData.map((step, index) => (
+        {timelineData.map((step) => (
           <div key={step.id} style={{ position: 'relative' }}>
-            {/* Timeline Dot */}
             <div style={{
               position: 'absolute',
               left: '-33px',
@@ -48,6 +47,6 @@ const JourneyTimeline = () => {
       </div>
     </div>
   );
-};
+});
 
 export default JourneyTimeline;

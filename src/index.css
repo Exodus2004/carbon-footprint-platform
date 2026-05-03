@@ -91,6 +91,13 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--text-primary);
 }
 
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
 /* App Layout */
 .app-container {
   max-width: 1200px;

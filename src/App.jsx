@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import React, { useState, Suspense, lazy } from 'react'
 import './App.css'
 import { useLanguage } from './contexts/LanguageContext'
 import Navbar from './components/Navbar'
 import JourneyTimeline from './components/JourneyTimeline'
-import AITownhall from './components/AITownhall'
 import CivicsQuiz from './components/CivicsQuiz'
+
+// Lazy load the AITownhall component for performance efficiency
+const AITownhall = lazy(() => import('./components/AITownhall'));
 
 function App() {
   const { t } = useLanguage();
@@ -30,8 +32,12 @@ function App() {
         )}
 
         {activeTab === 'journey' && <JourneyTimeline />}
-        {activeTab === 'townhall' && <AITownhall />}
         {activeTab === 'quiz' && <CivicsQuiz />}
+        {activeTab === 'townhall' && (
+          <Suspense fallback={<div className="glass-panel" style={{ marginTop: '24px', textAlign: 'center', color: 'var(--accent-cyan)' }}>Loading AI Townhall...</div>}>
+            <AITownhall />
+          </Suspense>
+        )}
       </main>
     </div>
   )

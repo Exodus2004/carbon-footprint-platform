@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const Navbar = ({ activeTab, setActiveTab }) => {
-  const { t, toggleLanguage, language } = useLanguage();
+const Navbar = memo(({ activeTab, setActiveTab }) => {
+  const { t, toggleLanguage } = useLanguage();
 
   return (
     <header className="header" style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(5, 5, 5, 0.8)', backdropFilter: 'blur(10px)' }}>
@@ -38,6 +38,6 @@ const Navbar = ({ activeTab, setActiveTab }) => {
       </button>
     </header>
   );
-};
+});
 
 export default Navbar;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const questions = [
@@ -12,20 +12,20 @@ const questions = [
   }
 ];
 
-const CivicsQuiz = () => {
+const CivicsQuiz = memo(() => {
   const { language } = useLanguage();
   const [currentQ, setCurrentQ] = useState(0);
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
 
-  const t = {
+  const t = useMemo(() => ({
     en: { title: 'Civics Quiz', scoreText: 'You scored {score} out of {total}', restart: 'Restart Quiz' },
     te: { title: 'సివిక్స్ క్విజ్', scoreText: 'మీరు {total} కి గాను {score} సాధించారు', restart: 'క్విజ్‌ని పునఃప్రారంభించండి' }
-  }[language];
+  })[language], [language]);
 
-  const handleAnswer = (index) => {
+  const handleAnswer = useCallback((index) => {
     if (index === questions[currentQ][language].a) {
-      setScore(score + 1);
+      setScore((prev) => prev + 1);
     }
     const nextQ = currentQ + 1;
     if (nextQ < questions.length) {
@@ -33,13 +33,13 @@ const CivicsQuiz = () => {
     } else {
       setShowScore(true);
     }
-  };
+  }, [currentQ, language]);
 
-  const restartQuiz = () => {
+  const restartQuiz = useCallback(() => {
     setScore(0);
     setCurrentQ(0);
     setShowScore(false);
-  };
+  }, []);
 
   return (
     <div className="glass-panel" style={{ marginTop: '24px' }}>
@@ -74,6 +74,6 @@ const CivicsQuiz = () => {
       )}
     </div>
   );
-};
+});
 
 export default CivicsQuiz;
