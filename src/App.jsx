@@ -23,7 +23,7 @@ function App() {
             <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '32px' }}>
               {t('welcomeSubtitle')}
             </p>
-            <button className="btn-primary" style={{ fontSize: '1.1rem' }} onClick={() => setActiveTab('journey')}>
+            <button className="btn-primary" style={{ fontSize: '1.1rem' }} onClick={() => setActiveTab('journey')} aria-label={t('getStarted')}>
               {t('getStarted')}
             </button>
           </section>

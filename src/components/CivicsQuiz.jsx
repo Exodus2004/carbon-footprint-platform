@@ -50,7 +50,7 @@ const CivicsQuiz = () => {
           <h3 style={{ fontSize: '2rem', marginBottom: '16px' }}>
             {t.scoreText.replace('{score}', score).replace('{total}', questions.length)}
           </h3>
-          <button className="btn-primary" onClick={restartQuiz}>{t.restart}</button>
+          <button className="btn-primary" onClick={restartQuiz} aria-label={t.restart}>{t.restart}</button>
         </div>
       ) : (
         <div>
@@ -64,6 +64,7 @@ const CivicsQuiz = () => {
                 className="btn-outline" 
                 style={{ textAlign: 'left', padding: '16px', fontSize: '1rem' }}
                 onClick={() => handleAnswer(index)}
+                aria-label={`Answer option: ${option}`}
               >
                 {option}
               </button>

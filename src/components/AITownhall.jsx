@@ -75,6 +75,7 @@ const AITownhall = () => {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder={t.placeholder}
+          aria-label={t.title}
           style={{
             flex: 1,
             padding: '12px 16px',
@@ -90,6 +91,7 @@ const AITownhall = () => {
           className="btn-primary" 
           onClick={handleSimulate}
           disabled={loading || !topic.trim()}
+          aria-label={loading ? t.analyzing : t.button}
           style={{ opacity: loading || !topic.trim() ? 0.7 : 1 }}
         >
           {loading ? t.analyzing : t.button}
