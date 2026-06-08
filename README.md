@@ -1,28 +1,20 @@
-# Democracyverse (Election Process Education)
+# Carbon Footprint Awareness Platform
 
-This is an interactive web application designed for the Google Prompt Wars hackathon. It guides users through the voter journey and features an AI Townhall simulator powered by the Google Gemini API.
+A full-stack application to track, analyze, and gain insights into individual carbon footprints using AI.
 
-## Features
-- **Voter Journey Timeline:** Step-by-step educational guide.
-- **AI Townhall:** Input a political topic and watch Gemini simulate a debate between two personas.
-- **Civics Quiz:** Test your knowledge.
-- **Bilingual Support:** Instantly toggle between English and Telugu.
-- **WCAG AA Compliant:** High-contrast dark theme with glassmorphism.
+## Architecture
 
-## Setup
-1. Clone this repository.
-2. Run `npm install`.
-3. Create a `.env` file with `VITE_GEMINI_API_KEY="your_api_key_here"`.
-4. Run `npm run dev`.
+- **Backend:** FastAPI (Python), Google Gemini API, BigQuery Streaming, Firebase Auth Middleware
+- **Frontend:** React, Vite, TailwindCSS (via standard CSS utilities), Accessible UI Components
 
-## Security (Google Cloud Key Restrictions)
-Since Vite exposes variables prefixed with `VITE_` to the client-side code, it is highly recommended to lock down your Gemini API key:
-1. Go to the **Google Cloud Console** -> **APIs & Services** -> **Credentials**.
-2. Click your **Gemini API Key**.
-3. Under **Application restrictions**, select **Websites**.
-4. Add your exact Cloud Run URL (e.g., `https://democracyverse-xyz123.a.run.app/*`).
+## Local Development
 
-This ensures that even if someone inspects the source code and finds the key, Google will block any requests that don't originate from your live app.
+1. Set up your `.env` file with necessary keys (e.g., `GEMINI_API_KEY`).
+2. Run `docker-compose up --build`.
+3. The backend API is available at `http://localhost:8000`.
+4. The frontend app is available at `http://localhost:5173`.
 
-## Important Note on Testing the AI Townhall
-Because 2024-2026 are major global election years, Google’s Gemini API currently has strict, server-level safety blocks on prompts containing words like "vote," "election," or specific political figures. To demonstrate our fully working UI, backend integration, and prompt engineering, please test the simulator using general policy topics (e.g., "Should AI be regulated?" or "Should college be free?").
+## Security & Accessibility
+
+- The backend implements Firebase token verification and strict Pydantic model validation.
+- The frontend enforces semantic HTML5 and ARIA labels for accessibility.

@@ -1,0 +1,8 @@
+fastapi==0.109.2
+uvicorn==0.27.1
+pydantic==2.6.1
+google-cloud-bigquery==3.17.2
+google-generativeai==0.3.2
+firebase-admin==6.4.0
+pytest==8.0.1
+httpx==0.26.0
