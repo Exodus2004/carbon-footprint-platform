@@ -10,6 +10,7 @@ AUTH_HEADERS = {"Authorization": "Bearer mock_local_token"}
 # Health check
 # ---------------------------------------------------------------------------
 
+
 def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
@@ -20,12 +21,9 @@ def test_health_check():
 # Successful submission
 # ---------------------------------------------------------------------------
 
+
 def test_submit_carbon_data_success():
-    payload = {
-        "transportation_miles": 120.5,
-        "energy_kwh": 350.0,
-        "diet_meat_meals": 5
-    }
+    payload = {"transportation_miles": 120.5, "energy_kwh": 350.0, "diet_meat_meals": 5}
     response = client.post("/api/v1/carbon", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 200
     data = response.json()
@@ -36,11 +34,7 @@ def test_submit_carbon_data_success():
 
 def test_submit_zero_values():
     """All-zero values are valid and should not trigger a validation error."""
-    payload = {
-        "transportation_miles": 0,
-        "energy_kwh": 0,
-        "diet_meat_meals": 0
-    }
+    payload = {"transportation_miles": 0, "energy_kwh": 0, "diet_meat_meals": 0}
     response = client.post("/api/v1/carbon", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 200
     data = response.json()
@@ -51,12 +45,9 @@ def test_submit_zero_values():
 # Negative value edge cases (Pydantic ge=0 constraint)
 # ---------------------------------------------------------------------------
 
+
 def test_negative_transportation_miles():
-    payload = {
-        "transportation_miles": -10,
-        "energy_kwh": 350.0,
-        "diet_meat_meals": 5
-    }
+    payload = {"transportation_miles": -10, "energy_kwh": 350.0, "diet_meat_meals": 5}
     response = client.post("/api/v1/carbon", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 422
     body = response.json()
@@ -65,11 +56,7 @@ def test_negative_transportation_miles():
 
 
 def test_negative_energy_kwh():
-    payload = {
-        "transportation_miles": 50,
-        "energy_kwh": -999.9,
-        "diet_meat_meals": 3
-    }
+    payload = {"transportation_miles": 50, "energy_kwh": -999.9, "diet_meat_meals": 3}
     response = client.post("/api/v1/carbon", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 422
     body = response.json()
@@ -78,11 +65,7 @@ def test_negative_energy_kwh():
 
 
 def test_negative_diet_meat_meals():
-    payload = {
-        "transportation_miles": 50,
-        "energy_kwh": 100,
-        "diet_meat_meals": -1
-    }
+    payload = {"transportation_miles": 50, "energy_kwh": 100, "diet_meat_meals": -1}
     response = client.post("/api/v1/carbon", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 422
     body = response.json()
@@ -92,11 +75,7 @@ def test_negative_diet_meat_meals():
 
 def test_all_negative_values():
     """Every single metric is negative — all three should be flagged."""
-    payload = {
-        "transportation_miles": -5,
-        "energy_kwh": -20,
-        "diet_meat_meals": -3
-    }
+    payload = {"transportation_miles": -5, "energy_kwh": -20, "diet_meat_meals": -3}
     response = client.post("/api/v1/carbon", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 422
     body = response.json()
@@ -106,6 +85,7 @@ def test_all_negative_values():
 # ---------------------------------------------------------------------------
 # Empty / malformed payload edge cases
 # ---------------------------------------------------------------------------
+
 
 def test_empty_json_body():
     """An empty JSON object should fail validation for all required fields."""
@@ -121,7 +101,7 @@ def test_completely_empty_request_body():
     response = client.post(
         "/api/v1/carbon",
         headers={**AUTH_HEADERS, "Content-Type": "application/json"},
-        content=""
+        content="",
     )
     assert response.status_code == 422
 
@@ -131,7 +111,7 @@ def test_wrong_data_types():
     payload = {
         "transportation_miles": "not_a_number",
         "energy_kwh": "bad",
-        "diet_meat_meals": "oops"
+        "diet_meat_meals": "oops",
     }
     response = client.post("/api/v1/carbon", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 422
@@ -139,9 +119,7 @@ def test_wrong_data_types():
 
 def test_missing_partial_fields():
     """Only one field provided — the other two required fields should fail."""
-    payload = {
-        "transportation_miles": 100.0
-    }
+    payload = {"transportation_miles": 100.0}
     response = client.post("/api/v1/carbon", json=payload, headers=AUTH_HEADERS)
     assert response.status_code == 422
     body = response.json()
@@ -152,45 +130,36 @@ def test_missing_partial_fields():
 # Authorization edge cases
 # ---------------------------------------------------------------------------
 
+
 def test_missing_authorization_header():
     """No Authorization header at all."""
-    payload = {
-        "transportation_miles": 120.5,
-        "energy_kwh": 350.0,
-        "diet_meat_meals": 5
-    }
+    payload = {"transportation_miles": 120.5, "energy_kwh": 350.0, "diet_meat_meals": 5}
     response = client.post("/api/v1/carbon", json=payload)
     assert response.status_code == 401
 
 
 def test_empty_authorization_header():
     """Authorization header present but completely empty."""
-    payload = {
-        "transportation_miles": 120.5,
-        "energy_kwh": 350.0,
-        "diet_meat_meals": 5
-    }
-    response = client.post("/api/v1/carbon", json=payload, headers={"Authorization": ""})
+    payload = {"transportation_miles": 120.5, "energy_kwh": 350.0, "diet_meat_meals": 5}
+    response = client.post(
+        "/api/v1/carbon", json=payload, headers={"Authorization": ""}
+    )
     assert response.status_code == 401
 
 
 def test_malformed_bearer_token():
     """Authorization header without 'Bearer' prefix."""
-    payload = {
-        "transportation_miles": 120.5,
-        "energy_kwh": 350.0,
-        "diet_meat_meals": 5
-    }
-    response = client.post("/api/v1/carbon", json=payload, headers={"Authorization": "Token abc123"})
+    payload = {"transportation_miles": 120.5, "energy_kwh": 350.0, "diet_meat_meals": 5}
+    response = client.post(
+        "/api/v1/carbon", json=payload, headers={"Authorization": "Token abc123"}
+    )
     assert response.status_code == 401
 
 
 def test_bearer_without_token():
     """Authorization header with 'Bearer' but no token string after it."""
-    payload = {
-        "transportation_miles": 120.5,
-        "energy_kwh": 350.0,
-        "diet_meat_meals": 5
-    }
-    response = client.post("/api/v1/carbon", json=payload, headers={"Authorization": "Bearer "})
+    payload = {"transportation_miles": 120.5, "energy_kwh": 350.0, "diet_meat_meals": 5}
+    response = client.post(
+        "/api/v1/carbon", json=payload, headers={"Authorization": "Bearer "}
+    )
     assert response.status_code == 401

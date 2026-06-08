@@ -14,6 +14,7 @@ try:
 except Exception as e:
     print(f"Firebase initialization skipped or failed: {e}")
 
+
 async def verify_firebase_token(authorization: str = Header(None)) -> str:
     """
     Middleware to verify Firebase ID tokens.
@@ -22,10 +23,12 @@ async def verify_firebase_token(authorization: str = Header(None)) -> str:
     """
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
-    
+
     scheme, _, token = authorization.partition(" ")
     if scheme.lower() != "bearer" or not token:
-        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+        raise HTTPException(
+            status_code=401, detail="Invalid Authorization header format"
+        )
 
     # Mock behavior for local development when Firebase is not initialized
     if token == "mock_local_token":
@@ -39,4 +42,6 @@ async def verify_firebase_token(authorization: str = Header(None)) -> str:
         decoded_token = auth.verify_id_token(token)
         return decoded_token.get("uid")
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid or expired token: {str(e)}")
+        raise HTTPException(
+            status_code=401, detail=f"Invalid or expired token: {str(e)}"
+        )

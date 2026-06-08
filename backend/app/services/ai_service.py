@@ -1,3 +1,5 @@
+"""AI service module containing helper methods for interacting with Gemini APIs."""
+
 import google.generativeai as genai
 import os
 import logging
@@ -9,14 +11,29 @@ api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
 
-def generate_carbon_insights(metrics: dict) -> str:
+# Simple in-memory cache to prevent redundant API calls for identical metric inputs
+_insights_cache = {}
+
+
+async def generate_carbon_insights(metrics: dict) -> str:
+    """Generates personalized actionable insights based on carbon metrics.
+
+    Args:
+        metrics: A dictionary containing the user's transportation, energy, and diet stats.
+
+    Returns:
+        A string containing encouraging, specific, and actionable insights.
     """
-    Uses Google Gemini API to generate personalized actionable insights
-    based on the user's carbon metrics.
-    """
-    transportation = metrics.get('transportation_miles', 0)
-    energy = metrics.get('energy_kwh', 0)
-    diet = metrics.get('diet_meat_meals', 0)
+    transportation = metrics.get("transportation_miles", 0)
+    energy = metrics.get("energy_kwh", 0)
+    diet = metrics.get("diet_meat_meals", 0)
+
+    # Use rounded tuple as the cache key to handle minor float differences
+    cache_key = (round(float(transportation), 2), round(float(energy), 2), int(diet))
+
+    if cache_key in _insights_cache:
+        logger.info(f"Returning cached insights for metrics: {cache_key}")
+        return _insights_cache[cache_key]
 
     prompt = (
         f"I am building a Carbon Footprint Awareness Platform. "
@@ -31,15 +48,21 @@ def generate_carbon_insights(metrics: dict) -> str:
     try:
         if not api_key:
             logger.warning("GEMINI_API_KEY not set. Returning mock insights.")
-            return (
+            mock_insight = (
                 "Consider carpooling or biking for your transportation needs this week. "
                 "Reducing your meat consumption by even one meal can significantly lower your footprint. "
                 "Small changes in daily habits lead to major environmental impact."
             )
+            _insights_cache[cache_key] = mock_insight
+            return mock_insight
 
-        model = genai.GenerativeModel('gemini-3.5-flash')
-        response = model.generate_content(prompt)
-        return response.text.strip()
+        model = genai.GenerativeModel("gemini-3.5-flash")
+        response = await model.generate_content_async(prompt)
+        insight_text = response.text.strip()
+
+        # Cache the successful insight response
+        _insights_cache[cache_key] = insight_text
+        return insight_text
     except Exception as e:
         logger.error(f"Failed to generate Gemini insights: {e}")
         err_msg = str(e).lower()
