@@ -35,8 +35,9 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> typing.AsyncGenerator[None, None]:
-    """Lifecycle handler to manage a single, global persistent HTTPX connection pool."""
-    async with httpx.AsyncClient() as client:
+    """Lifecycle handler to manage a single, global persistent HTTPX connection pool with explicit keepalive limits."""
+    limits = httpx.Limits(max_keepalive_connections=50, max_connections=100, keepalive_expiry=30.0)
+    async with httpx.AsyncClient(limits=limits) as client:
         app.state.client = client
         yield
 
