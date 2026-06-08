@@ -37,9 +37,12 @@ def generate_carbon_insights(metrics: dict) -> str:
                 "Small changes in daily habits lead to major environmental impact."
             )
 
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-3.5-flash')
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
         logger.error(f"Failed to generate Gemini insights: {e}")
+        err_msg = str(e).lower()
+        if "429" in err_msg or "quota" in err_msg or "resource_exhausted" in err_msg:
+            return "The AI service is currently rate-limited on the free tier. Please wait about 30 seconds and try again."
         return "We encountered an issue generating your personalized insights. Please try again later."

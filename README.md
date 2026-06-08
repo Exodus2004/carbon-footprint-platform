@@ -2,6 +2,11 @@
 
 A full-stack application to track, analyze, and gain insights into individual carbon footprints using AI.
 
+## Live Deployment
+
+- **Frontend Application:** [https://frontend-mocha-tau-y5lenn77qx.vercel.app](https://frontend-mocha-tau-y5lenn77qx.vercel.app)
+- **Backend API:** [https://carbon-backend-949126109965.us-central1.run.app](https://carbon-backend-949126109965.us-central1.run.app)
+
 ## Architecture
 
 - **Backend:** FastAPI (Python), Google Gemini API, BigQuery Streaming, Firebase Auth Middleware
