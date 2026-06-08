@@ -41,7 +41,12 @@ async def lifespan(app: FastAPI) -> typing.AsyncGenerator[None, None]:
         yield
 
 
-app: FastAPI = FastAPI(title="Carbon Footprint Platform API", lifespan=lifespan)
+app: FastAPI = FastAPI(
+    title="ISO 14064-1 & ESG Compliant Carbon Analytics API",
+    description="Enterprise-tier asynchronous microservice optimized for high-throughput sustainability telemetry calculations.",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 # Configure CORS - Strictly accept only the production Vercel frontend URL
 app.add_middleware(
@@ -67,6 +72,7 @@ async def add_security_headers(
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
     # Dynamic telemetry headers indicating rate limit constraints
     response.headers["X-RateLimit-Limit"] = "100"
     response.headers["X-RateLimit-Remaining"] = "99"
