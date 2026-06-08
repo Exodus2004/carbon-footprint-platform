@@ -6,6 +6,23 @@ client = TestClient(app)
 AUTH_HEADERS = {"Authorization": "Bearer mock_local_token"}
 
 
+import pytest
+from unittest.mock import AsyncMock, patch
+
+
+@pytest.fixture(autouse=True)
+def mock_services():
+    """Autouse fixture to intercept and mock all AI and BQ network/API calls."""
+    with (
+        patch("app.main.stream_carbon_data", new_callable=AsyncMock) as mock_bq,
+        patch("app.main.generate_carbon_insights", new_callable=AsyncMock) as mock_ai,
+    ):
+        mock_ai.return_value = (
+            "Mocked AI recommendations. Spend less on travel. Eat more greens."
+        )
+        yield mock_bq, mock_ai
+
+
 # ---------------------------------------------------------------------------
 # Health check
 # ---------------------------------------------------------------------------

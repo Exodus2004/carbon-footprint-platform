@@ -28,6 +28,12 @@ async def generate_carbon_insights(metrics: dict) -> str:
     energy = metrics.get("energy_kwh", 0)
     diet = metrics.get("diet_meat_meals", 0)
 
+    # Mathematically convert metrics into standard CO2e (kg CO2 equivalent)
+    est_transport = transportation * 0.404
+    est_energy = energy * 0.385
+    est_diet = diet * 2.5
+    total_co2e = est_transport + est_energy + est_diet
+
     # Use rounded tuple as the cache key to handle minor float differences
     cache_key = (round(float(transportation), 2), round(float(energy), 2), int(diet))
 
@@ -37,12 +43,13 @@ async def generate_carbon_insights(metrics: dict) -> str:
 
     prompt = (
         f"I am building a Carbon Footprint Awareness Platform. "
-        f"A user has submitted the following weekly metrics:\n"
-        f"- Transportation: {transportation} miles driven.\n"
-        f"- Energy usage: {energy} kWh.\n"
-        f"- Diet: {diet} meat-heavy meals.\n\n"
+        f"A user has submitted the following weekly metrics with calculated CO2e values:\n"
+        f"- Transportation: {transportation} miles driven (Estimated: {est_transport:.2f} kg CO2e).\n"
+        f"- Energy usage: {energy} kWh (Estimated: {est_energy:.2f} kg CO2e).\n"
+        f"- Diet: {diet} meat-heavy meals (Estimated: {est_diet:.2f} kg CO2e).\n"
+        f"- Total Estimated Weekly Emissions: {total_co2e:.2f} kg CO2e.\n\n"
         f"Provide a brief, encouraging, and highly specific 3-sentence recommendation "
-        f"on how they can reduce their carbon footprint this week. Focus on the highest impact area."
+        f"on how they can reduce their carbon footprint this week based on these exact math inputs. Focus on the highest impact area."
     )
 
     try:

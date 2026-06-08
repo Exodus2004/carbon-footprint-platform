@@ -93,9 +93,29 @@
         padding: 1rem 0;
         border-bottom: 1px solid #eee;
       }
+      .skip-link {
+        position: absolute;
+        left: -10000px;
+        top: auto;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        background: var(--primary-color);
+        color: white;
+        font-weight: bold;
+      }
+      .skip-link:focus {
+        position: block;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        padding: 0.5rem 1rem;
+        outline: 2px solid var(--primary-color);
+      }
     </style>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

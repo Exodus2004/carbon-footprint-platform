@@ -38,7 +38,7 @@ function App() {
   };
 
   return (
-    <div className="container" role="main">
+    <main className="container" id="main-content">
       <header role="banner">
         <h1>Carbon Footprint Awareness Platform</h1>
         <p>Track your emissions and get personalized AI recommendations to reduce your impact.</p>
@@ -55,7 +55,7 @@ function App() {
       ) : (
         <Dashboard data={data} insights={insights} onReset={() => setData(null)} />
       )}
-    </div>
+    </main>
   );
 }
 
