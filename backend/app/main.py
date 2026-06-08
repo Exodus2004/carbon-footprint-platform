@@ -1,5 +1,15 @@
 """Main FastAPI application module defining routes, middleware, and exception handlers."""
 
+import sys
+import asyncio
+
+if sys.platform != "win32":
+    try:
+        import uvloop
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    except ImportError:
+        pass
+
 import logging
 import traceback
 import typing
@@ -8,7 +18,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 import httpx
-from fastapi import FastAPI, Depends, HTTPException, Request
+import msgspec
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -192,7 +203,7 @@ async def submit_carbon_data(
     metrics: CarbonMetrics,
     request: Request,
     user_id: str = Depends(verify_firebase_token)
-) -> typing.Dict[str, typing.Any]:
+) -> Response:
     """Submit carbon metrics, stream to BigQuery, and generate AI insights."""
     try:
         # Stream data to BigQuery asynchronously
@@ -224,13 +235,13 @@ async def submit_carbon_data(
                 "calculated_co2e": total_co2e
             }
 
-        return insights_data
+        return Response(content=msgspec.json.encode(insights_data), media_type="application/json")
     except Exception as e:
         logger.error(f"Error processing carbon data: {e}")
         raise HTTPException(status_code=500, detail="Internal server error while processing data")
 
 
 @app.get("/health", response_model=HealthResponse)
-def health_check() -> typing.Dict[str, str]:
+def health_check() -> Response:
     """Simple API health check endpoint."""
-    return {"status": "healthy"}
+    return Response(content=msgspec.json.encode({"status": "healthy"}), media_type="application/json")

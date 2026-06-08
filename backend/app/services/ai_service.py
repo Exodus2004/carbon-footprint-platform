@@ -1,15 +1,16 @@
-"""AI service module utilizing the Gemini REST API with connection pooling and caching."""
+"""AI service module utilizing the Gemini REST API with connection pooling and cryptographic caching."""
 
 import os
 import logging
+import hashlib
 import httpx
-import orjson
-from typing import Dict, Any, Tuple
+import msgspec
+from typing import Dict, Any
 
 logger: logging.Logger = logging.getLogger(__name__)
 
-# Persistent in-memory cache for carbon calculations and insights
-_insights_cache: Dict[Tuple[float, float, int], Dict[str, Any]] = {}
+# Cryptographic zero-latency cache layer (deterministic cache keys via SHA256)
+_insights_crypto_cache: Dict[str, Dict[str, Any]] = {}
 
 async def generate_carbon_insights(
     client: httpx.AsyncClient,
@@ -34,15 +35,19 @@ async def generate_carbon_insights(
     scope3: float = diet * 2.5              # Scope 3: Diet emissions (meat meals)
     total_co2e: float = round(scope1 + scope2 + scope3, 2)
 
-    cache_key: Tuple[float, float, int] = (
-        round(transportation, 2),
-        round(energy, 2),
-        diet
-    )
+    # Cryptographic hash key generation to prevent redundant outbound requests
+    # Sort keys for deterministic representation
+    normalized_metrics = {
+        "diet_meat_meals": diet,
+        "energy_kwh": round(energy, 2),
+        "transportation_miles": round(transportation, 2)
+    }
+    serialized_payload = msgspec.json.encode(normalized_metrics)
+    cache_key: str = hashlib.sha256(serialized_payload).hexdigest()
 
-    if cache_key in _insights_cache:
-        logger.info(f"Returning cached insights for metrics: {cache_key}")
-        return _insights_cache[cache_key]
+    if cache_key in _insights_crypto_cache:
+        logger.info(f"Zero-latency cache hit for hash key: {cache_key}")
+        return _insights_crypto_cache[cache_key]
 
     api_key: str = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
@@ -56,7 +61,7 @@ async def generate_carbon_insights(
             ),
             "calculated_co2e": total_co2e
         }
-        _insights_cache[cache_key] = mock_data
+        _insights_crypto_cache[cache_key] = mock_data
         return mock_data
 
     # Rigid JSON Schema constraint for Gemini response
@@ -101,7 +106,7 @@ async def generate_carbon_insights(
         # Utilize pooled HTTP client for zero-handshake overhead
         response: httpx.Response = await client.post(
             url,
-            content=orjson.dumps(payload),
+            content=msgspec.json.encode(payload),
             headers={"Content-Type": "application/json"},
             timeout=15.0
         )
@@ -116,15 +121,15 @@ async def generate_carbon_insights(
 
         response.raise_for_status()
         
-        # Parse output utilizing high-performance orjson
-        response_data: Dict[str, Any] = orjson.loads(response.content)
+        # Parse output utilizing high-performance msgspec
+        response_data: Dict[str, Any] = msgspec.json.decode(response.content)
         raw_text: str = response_data["candidates"][0]["content"]["parts"][0]["text"]
-        result: Dict[str, Any] = orjson.loads(raw_text)
+        result: Dict[str, Any] = msgspec.json.decode(raw_text)
         
         # Ground total calculated CO2e mathematically to our local calculation
         result["calculated_co2e"] = total_co2e
         
-        _insights_cache[cache_key] = result
+        _insights_crypto_cache[cache_key] = result
         return result
 
     except Exception as e:
