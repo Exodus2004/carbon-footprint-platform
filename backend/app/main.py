@@ -60,10 +60,10 @@ app.add_middleware(
 @app.middleware("http")
 async def add_security_headers(
     request: Request,
-    call_next: typing.Callable[[Request], typing.Awaitable[typing.Any]]
-) -> typing.Any:
+    call_next: typing.Callable[[Request], typing.Awaitable[Response]]
+) -> Response:
     """Enforce strict HTTP security headers and rate-limit telemetry on all responses."""
-    response: typing.Any = await call_next(request)
+    response: Response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["X-Frame-Options"] = "DENY"
@@ -83,31 +83,36 @@ ip_requests: typing.DefaultDict[str, typing.List[datetime]] = defaultdict(list)
 @app.middleware("http")
 async def rate_limit_middleware(
     request: Request,
-    call_next: typing.Callable[[Request], typing.Awaitable[typing.Any]]
-) -> typing.Any:
+    call_next: typing.Callable[[Request], typing.Awaitable[Response]]
+) -> Response:
     """Basic IP-based rate limiter to protect POST routes from abuse."""
-    if request.method == "POST" and request.url.path == "/api/v1/carbon":
-        ip: str = request.client.host if request.client else "unknown"
-        if ip == "testclient":
-            return await call_next(request)
-        now: datetime = datetime.utcnow()
-        # Clean older requests outside the active period window
-        ip_requests[ip] = [t for t in ip_requests[ip] if now - t < RATE_LIMIT_PERIOD]
-        if len(ip_requests[ip]) >= RATE_LIMIT_LIMIT:
-            headers: typing.Dict[str, str] = {
-                "X-RateLimit-Limit": "100",
-                "X-RateLimit-Remaining": "0",
-                "X-RateLimit-Reset": "60",
-                "X-Content-Type-Options": "nosniff",
-                "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-                "X-Frame-Options": "DENY"
-            }
-            return JSONResponse(
-                status_code=429,
-                content={"status": "error", "detail": "Too many requests. Please try again later."},
-                headers=headers
-            )
-        ip_requests[ip].append(now)
+    if request.method != "POST" or request.url.path != "/api/v1/carbon":
+        return await call_next(request)
+
+    ip: str = request.client.host if request.client else "unknown"
+    if ip == "testclient":
+        return await call_next(request)
+
+    now: datetime = datetime.utcnow()
+    # Clean older requests outside the active period window
+    ip_requests[ip] = [t for t in ip_requests[ip] if now - t < RATE_LIMIT_PERIOD]
+    
+    if len(ip_requests[ip]) >= RATE_LIMIT_LIMIT:
+        headers: typing.Dict[str, str] = {
+            "X-RateLimit-Limit": "100",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": "60",
+            "X-Content-Type-Options": "nosniff",
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+            "X-Frame-Options": "DENY"
+        }
+        return JSONResponse(
+            status_code=429,
+            content={"status": "error", "detail": "Too many requests. Please try again later."},
+            headers=headers
+        )
+
+    ip_requests[ip].append(now)
     return await call_next(request)
 
 
@@ -210,7 +215,7 @@ async def submit_carbon_data(
         await stream_carbon_data(user_id, metrics.model_dump())
 
         # Generate personalized AI insights asynchronously using the persistent client
-        client = getattr(request.app.state, "client", None)
+        client: typing.Optional[httpx.AsyncClient] = getattr(request.app.state, "client", None)
         if client is None:
             async with httpx.AsyncClient() as temp_client:
                 insights_data = await generate_carbon_insights(
