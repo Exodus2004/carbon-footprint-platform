@@ -46,10 +46,13 @@ app: FastAPI = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS - Strictly accept only the production Vercel frontend URL
+# Configure CORS - Allow both old and new production Vercel frontend URLs
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://frontend-mocha-tau-y5lenn77qx.vercel.app"],
+    allow_origins=[
+        "https://frontend-mocha-tau-y5lenn77qx.vercel.app",
+        "https://fifa-ops-platform-2026.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
