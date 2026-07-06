@@ -1,5 +1,5 @@
 {
-  "name": "carbon-footprint-frontend",
+  "name": "fifa-operations-frontend",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "preact": "^10.29.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "vite-plugin-compression": "^0.5.1"
+    "preact": "^10.19.6"
   },
   "devDependencies": {
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vite-plugin-compression": "^0.5.1"
   }
 }

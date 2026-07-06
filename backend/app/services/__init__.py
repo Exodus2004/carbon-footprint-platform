@@ -1,1 +1,1 @@
-# Initialize services module
+# Package initialization

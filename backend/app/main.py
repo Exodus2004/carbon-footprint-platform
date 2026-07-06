@@ -19,15 +19,12 @@ from collections import defaultdict
 
 import httpx
 import msgspec
-from fastapi import FastAPI, Depends, HTTPException, Request, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 
-from app.services.ai_service import generate_carbon_insights
-from app.services.bq_service import stream_carbon_data
-from app.middleware.auth_middleware import verify_firebase_token
+from app.services.ai_ops_service import analyze_stadium_operations, GeminiOpsInsights
 
 logging.basicConfig(level=logging.INFO)
 logger: logging.Logger = logging.getLogger(__name__)
@@ -35,16 +32,16 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> typing.AsyncGenerator[None, None]:
-    """Lifecycle handler to manage a single, global persistent HTTPX connection pool with explicit keepalive limits."""
-    limits = httpx.Limits(max_keepalive_connections=50, max_connections=100, keepalive_expiry=30.0)
+    """Lifecycle handler managing persistent HTTPX connection pool with keepalive limits."""
+    limits = httpx.Limits(max_keepalive_connections=50, max_connections=100)
     async with httpx.AsyncClient(limits=limits) as client:
         app.state.client = client
         yield
 
 
 app: FastAPI = FastAPI(
-    title="ISO 14064-1 & ESG Compliant Carbon Analytics API",
-    description="Enterprise-tier asynchronous microservice optimized for high-throughput sustainability telemetry calculations.",
+    title="FIFA World Cup 2026 Operations Platform API",
+    description="Enterprise-tier asynchronous microservice optimized for high-throughput crowd flow and multilingual transit routing telemetry analysis.",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -73,7 +70,7 @@ async def add_security_headers(
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
     # Dynamic telemetry headers indicating rate limit constraints
     response.headers["X-RateLimit-Limit"] = "100"
     response.headers["X-RateLimit-Remaining"] = "99"
@@ -93,7 +90,7 @@ async def rate_limit_middleware(
     call_next: typing.Callable[[Request], typing.Awaitable[Response]]
 ) -> Response:
     """Basic IP-based rate limiter to protect POST routes from abuse."""
-    if request.method != "POST" or request.url.path != "/api/v1/carbon":
+    if request.method != "POST" or request.url.path != "/api/v1/operations/analyze":
         return await call_next(request)
 
     ip: str = request.client.host if request.client else "unknown"
@@ -106,16 +103,19 @@ async def rate_limit_middleware(
     
     if len(ip_requests[ip]) >= RATE_LIMIT_LIMIT:
         headers: typing.Dict[str, str] = {
-            "X-RateLimit-Limit": "100",
+            "X-RateLimit-Limit": "10",
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": "60",
             "X-Content-Type-Options": "nosniff",
             "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-            "X-Frame-Options": "DENY"
+            "X-Frame-Options": "DENY",
+            "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
         }
-        return JSONResponse(
+        err_content = {"status": "error", "detail": "Too many requests. Please try again later."}
+        return Response(
+            content=msgspec.json.encode(err_content),
             status_code=429,
-            content={"status": "error", "detail": "Too many requests. Please try again later."},
+            media_type="application/json",
             headers=headers
         )
 
@@ -132,7 +132,7 @@ async def rate_limit_middleware(
 async def validation_exception_handler(
     request: Request,
     exc: RequestValidationError
-) -> JSONResponse:
+) -> Response:
     """Intercepts validation errors and returns sanitized messages."""
     safe_errors: typing.List[typing.Dict[str, str]] = []
     for err in exc.errors():
@@ -147,13 +147,15 @@ async def validation_exception_handler(
         request.url.path,
         safe_errors,
     )
-    return JSONResponse(
+    err_content = {
+        "status": "error",
+        "detail": "One or more fields failed validation.",
+        "errors": safe_errors,
+    }
+    return Response(
+        content=msgspec.json.encode(err_content),
         status_code=422,
-        content={
-            "status": "error",
-            "detail": "One or more fields failed validation.",
-            "errors": safe_errors,
-        },
+        media_type="application/json"
     )
 
 
@@ -161,7 +163,7 @@ async def validation_exception_handler(
 async def global_exception_handler(
     request: Request,
     exc: Exception
-) -> JSONResponse:
+) -> Response:
     """Catch-all unhandled exception handler to shield traces from client."""
     logger.error(
         "Unhandled exception on %s %s:\n%s",
@@ -169,12 +171,14 @@ async def global_exception_handler(
         request.url.path,
         traceback.format_exc(),
     )
-    return JSONResponse(
+    err_content = {
+        "status": "error",
+        "detail": "An unexpected error occurred. Please try again later.",
+    }
+    return Response(
+        content=msgspec.json.encode(err_content),
         status_code=500,
-        content={
-            "status": "error",
-            "detail": "An unexpected error occurred. Please try again later.",
-        },
+        media_type="application/json"
     )
 
 
@@ -183,26 +187,12 @@ async def global_exception_handler(
 # ---------------------------------------------------------------------------
 
 
-class CarbonMetrics(BaseModel):
-    """Input metrics validation schema for carbon footprint calculation."""
+class OperationsRequest(BaseModel):
+    """Request validation schema for crowd flow and transit analysis."""
 
-    transportation_miles: float = Field(..., ge=0, description="Miles traveled using carbon-emitting transport")
-    energy_kwh: float = Field(..., ge=0, description="Energy usage in kilowatt-hours")
-    diet_meat_meals: int = Field(..., ge=0, description="Number of meat-heavy meals consumed")
-
-
-class CarbonResponse(BaseModel):
-    """Response validation schema containing carbon insights and calculations."""
-
-    status: str
-    insights: str
-    calculated_co2e: float
-
-
-class HealthResponse(BaseModel):
-    """Response validation schema for health check endpoints."""
-
-    status: str
+    stadium_zone_id: str = Field(..., description="Unique identifier for the stadium zone")
+    current_crowd_count: int = Field(..., ge=0, description="Current number of fans in the zone")
+    active_transit_vehicles: int = Field(..., ge=0, description="Active transit vehicles servicing the zone")
 
 
 # ---------------------------------------------------------------------------
@@ -210,50 +200,40 @@ class HealthResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/v1/carbon", response_model=CarbonResponse)
-async def submit_carbon_data(
-    metrics: CarbonMetrics,
-    request: Request,
-    user_id: str = Depends(verify_firebase_token)
+@app.post("/api/v1/operations/analyze")
+async def analyze_ops_route(
+    metrics: OperationsRequest,
+    request: Request
 ) -> Response:
-    """Submit carbon metrics, stream to BigQuery, and generate AI insights."""
+    """Analyze stadium operations and return ESG-compliant, structured insights."""
     try:
-        # Stream data to BigQuery asynchronously
-        await stream_carbon_data(user_id, metrics.model_dump())
-
-        # Generate personalized AI insights asynchronously using the persistent client
         client: typing.Optional[httpx.AsyncClient] = getattr(request.app.state, "client", None)
+        
+        # Fallback to local temporary client if client is not initialized in tests
         if client is None:
             async with httpx.AsyncClient() as temp_client:
-                insights_data = await generate_carbon_insights(
+                insights: GeminiOpsInsights = await analyze_stadium_operations(
                     temp_client,
-                    metrics.model_dump()
+                    metrics.stadium_zone_id,
+                    metrics.current_crowd_count,
+                    metrics.active_transit_vehicles
                 )
         else:
-            insights_data = await generate_carbon_insights(
+            insights = await analyze_stadium_operations(
                 client,
-                metrics.model_dump()
+                metrics.stadium_zone_id,
+                metrics.current_crowd_count,
+                metrics.active_transit_vehicles
             )
 
-        # Handle string return type from tests/mocks gracefully
-        if isinstance(insights_data, str):
-            scope1 = metrics.transportation_miles * 0.404
-            scope2 = metrics.energy_kwh * 0.385
-            scope3 = metrics.diet_meat_meals * 2.5
-            total_co2e = round(scope1 + scope2 + scope3, 2)
-            insights_data = {
-                "status": "success",
-                "insights": insights_data,
-                "calculated_co2e": total_co2e
-            }
-
-        return Response(content=msgspec.json.encode(insights_data), media_type="application/json")
+        return Response(content=msgspec.json.encode(insights), media_type="application/json")
     except Exception as e:
-        logger.error(f"Error processing carbon data: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error while processing data")
+        logger.error(f"Error processing operations data: {e}")
+        err_content = {"status": "error", "detail": "Internal server error while analyzing operations data"}
+        return Response(content=msgspec.json.encode(err_content), status_code=500, media_type="application/json")
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health")
 def health_check() -> Response:
     """Simple API health check endpoint."""
     return Response(content=msgspec.json.encode({"status": "healthy"}), media_type="application/json")

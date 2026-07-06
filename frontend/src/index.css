@@ -1,8 +1,9 @@
-/* High-visibility, high-contrast outline rules for keyboard navigation accessibility */
+/* Custom focus-visible outlines for keyboard accessibility */
 input:focus-visible,
 select:focus-visible,
-button:focus-visible {
-  outline: 3px solid #2e7d32 !important;
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #0d47a1 !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.4) !important;
+  box-shadow: 0 0 0 4px rgba(13, 71, 161, 0.4) !important;
 }
