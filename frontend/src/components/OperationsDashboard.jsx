@@ -132,7 +132,7 @@ function OperationsDashboard() {
           style={{ minHeight: '100px' }}
         >
           {!result && !loading && (
-            <p style={{ color: '#666' }}>Submit the operations form above to generate real-time multilingual dispatch signals.</p>
+            <p style={{ color: '#333333' }}>Submit the operations form above to generate real-time multilingual dispatch signals.</p>
           )}
 
           {loading && (
@@ -176,7 +176,7 @@ function OperationsDashboard() {
               </table>
 
               <div style={{ marginTop: '1.5rem', padding: '1rem', borderLeft: '4px solid #0d47a1', backgroundColor: '#f0f4c3' }}>
-                <h3 style={{ marginTop: 0, color: '#33691e' }}>Despacho Multilingüe (ES)</h3>
+                <h3 style={{ marginTop: 0, color: '#1b3a0a' }}>Despacho Multilingüe (ES)</h3>
                 <p style={{ fontStyle: 'italic', margin: 0 }}>{result.multilingual_dispatch_es}</p>
               </div>
             </div>

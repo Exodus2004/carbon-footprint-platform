@@ -11,6 +11,17 @@ client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
+def mock_httpx_client() -> typing.Generator[AsyncMock, None, None]:
+    """Mocks the httpx.AsyncClient context manager to prevent outbound requests."""
+    with patch("httpx.AsyncClient", autospec=True) as mock_class:
+        mock_instance = mock_class.return_value
+        # Mock the async context manager enter/exit methods
+        mock_instance.__aenter__.return_value = mock_instance
+        mock_instance.__aexit__.return_value = None
+        yield mock_instance
+
+
+@pytest.fixture(autouse=True)
 def mock_ai_service() -> typing.Generator[AsyncMock, None, None]:
     """Mocks the AI operations service call."""
     with patch("app.main.analyze_stadium_operations", new_callable=AsyncMock) as mock_analyze:
@@ -23,6 +34,12 @@ def mock_ai_service() -> typing.Generator[AsyncMock, None, None]:
             fifa_safety_compliance=True
         )
         yield mock_analyze
+
+
+def test_app_lifespan() -> None:
+    """Verifies that the application lifespan initializes the HTTPX client correctly."""
+    with TestClient(app) as tc:
+        assert tc.app.state.client is not None
 
 
 def test_health_check() -> None:
