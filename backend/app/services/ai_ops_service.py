@@ -109,10 +109,13 @@ async def analyze_stadium_operations(
             f"Capacidad actual al {density_index * 100:.1f}%. "
             f"Despachar autobuses adicionales para mitigar el riesgo de cuello de botella."
         )
+        bottleneck_risk: str = "LOW"
+        if density_index > 0.8:
+            bottleneck_risk = "HIGH"
         mock_data = GeminiOpsInsights(
             stadium_zone_id=zone_id,
             crowd_density_index=density_index,
-            transit_bottleneck_risk="HIGH" if density_index > 0.8 else "LOW",
+            transit_bottleneck_risk=bottleneck_risk,
             multilingual_dispatch_es=mock_es,
             fifa_safety_compliance=density_index < 0.95
         )

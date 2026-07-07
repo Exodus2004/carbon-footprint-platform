@@ -98,7 +98,9 @@ async def rate_limit_middleware(
     if request.method != "POST" or request.url.path != "/api/v1/operations/analyze":
         return await call_next(request)
 
-    ip: str = request.client.host if request.client else "unknown"
+    ip: str = "unknown"
+    if request.client is not None:
+        ip = request.client.host
     if ip == "testclient":
         return await call_next(request)
 
@@ -219,19 +221,20 @@ async def analyze_ops_route(
         # Fallback to local temporary client if client is not initialized in tests
         if client is None:
             async with httpx.AsyncClient() as temp_client:
-                insights: GeminiOpsInsights = await analyze_stadium_operations(
+                insights_temp: GeminiOpsInsights = await analyze_stadium_operations(
                     temp_client,
                     metrics.stadium_zone_id,
                     metrics.current_crowd_count,
                     metrics.active_transit_vehicles
                 )
-        else:
-            insights = await analyze_stadium_operations(
-                client,
-                metrics.stadium_zone_id,
-                metrics.current_crowd_count,
-                metrics.active_transit_vehicles
-            )
+            return Response(content=msgspec.json.encode(insights_temp), media_type="application/json")
+
+        insights: GeminiOpsInsights = await analyze_stadium_operations(
+            client,
+            metrics.stadium_zone_id,
+            metrics.current_crowd_count,
+            metrics.active_transit_vehicles
+        )
 
         return Response(content=msgspec.json.encode(insights), media_type="application/json")
     except Exception as e:
