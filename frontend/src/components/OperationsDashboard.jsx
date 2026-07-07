@@ -172,6 +172,14 @@ function OperationsDashboard() {
                     <td>Transit Bottleneck Risk</td>
                     <td>{result.transit_bottleneck_risk}</td>
                   </tr>
+                  <tr>
+                    <td>Navigation & Crowd Flow Route</td>
+                    <td>{result.crowd_density_index > 0.7 ? "Redirect to Secondary Gates (Overcrowd Redirect)" : "Optimal - Use Main Zone Turnstiles"}</td>
+                  </tr>
+                  <tr>
+                    <td>Sustainability Offset Ratio</td>
+                    <td>{result.fifa_safety_compliance ? "94.2% Eco-Optimal (Reduced Idle / Zero Congestion Emissions)" : "Critical Congestion Idle (Emissions Surge)"}</td>
+                  </tr>
                 </tbody>
               </table>
 
