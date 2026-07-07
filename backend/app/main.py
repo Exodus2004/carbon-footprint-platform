@@ -74,8 +74,6 @@ async def add_security_headers(
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Permissions-Policy"] = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     # Dynamic telemetry headers indicating rate limit constraints
     response.headers["X-RateLimit-Limit"] = "100"
     response.headers["X-RateLimit-Remaining"] = "99"
@@ -116,9 +114,7 @@ async def rate_limit_middleware(
             "X-Content-Type-Options": "nosniff",
             "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
             "X-Frame-Options": "DENY",
-            "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';",
-            "Referrer-Policy": "no-referrer",
-            "Permissions-Policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+            "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
         }
         err_content = {"status": "error", "detail": "Too many requests. Please try again later."}
         return Response(

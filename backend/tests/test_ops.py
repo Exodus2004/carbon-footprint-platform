@@ -38,7 +38,9 @@ def mock_ai_service() -> typing.Generator[AsyncMock, None, None]:
 
 def test_app_lifespan() -> None:
     """Verifies that the application lifespan initializes the HTTPX client correctly."""
+    from fastapi import FastAPI
     with TestClient(app) as tc:
+        assert isinstance(tc.app, FastAPI)
         assert tc.app.state.client is not None
 
 
